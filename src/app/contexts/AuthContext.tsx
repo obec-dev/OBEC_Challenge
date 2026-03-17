@@ -81,9 +81,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const initAuth = async () => {
       const authFallback = setTimeout(() => {
         if (mounted) setLoading(false);
-      }, 5000);
+      }, 8000);
 
       try {
+        // 1. ดึง Role เก่าที่เคยเซฟไว้ (ถ้ามี)
         const storedRole = localStorage.getItem('currentRole');
         if (storedRole) {
           _setCurrentRole(storedRole);
@@ -92,27 +93,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.setItem('currentRole', 'personal');
         }
 
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // 🟢 2. ไฮไลท์สำคัญ: ใช้ getUser() เพื่อ "บังคับถาม Server จริงๆ" ห้ามใช้ getSession() เด็ดขาด!
+        const { data: { user }, error } = await supabase.auth.getUser();
         
-        // 🔴 ป้องกัน Error กรณีเน็ตหลุดตอนเปิด Tab หรือ Token ตาย
-        if (error) {
-          throw error;
+        // 🔴 3. ถ้า Server บอกว่า Token พัง หมดอายุ หรือดึงไม่ขึ้น ให้โยน Error ทิ้งทันที!
+        if (error || !user) {
+          throw new Error("Token is dead or expired on server");
         }
 
-        if (session?.user) {
-          if (mounted) setUser(session.user);
-          await fetchProfileData(session.user.id);
-        } else {
-          if (mounted) setLoading(false);
+        // 4. ถ้าผ่านด่าน Server มาได้ แปลว่าของแท้ 100% ก็ดึง Profile ต่อได้เลย
+        if (mounted) {
+          setUser(user);
+          await fetchProfileData(user.id);
         }
+
       } catch (error) {
-        console.error("ระบบ Auth มีปัญหา (Token อาจหมดอายุ):", error);
+        console.log("ล้าง Session ผีหลอก (Ghost Session Cleared):", error);
+        
+        // 🧹 5. พิธีปัดเป่า: ล้างทุกอย่างให้กลายเป็น Guest ทันที
         if (mounted) {
           setUser(null);
           setProfile(null);
           setUserRoles(null);
           _setCurrentRole(null);
-          // 🧹 ล้างไส้ติ่งทิ้งให้หมดเพื่อกันการเกิด Dead Token ซ้ำซ้อน
           localStorage.clear();
           sessionStorage.clear();
           setLoading(false);
