@@ -79,12 +79,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const initAuth = async () => {
+      // 🛡️ ปรับ Timeout ให้ยาวขึ้นเผื่อบราวเซอร์หลับลึก
       const authFallback = setTimeout(() => {
         if (mounted) setLoading(false);
       }, 8000);
 
       try {
-        // 1. ดึง Role เก่าที่เคยเซฟไว้ (ถ้ามี)
+        // 1. ดึง Role เก่าที่เคยเซฟไว้
         const storedRole = localStorage.getItem('currentRole');
         if (storedRole) {
           _setCurrentRole(storedRole);
@@ -93,31 +94,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.setItem('currentRole', 'personal');
         }
 
-        // 🟢 2. ไฮไลท์สำคัญ: ใช้ getUser() เพื่อ "บังคับถาม Server จริงๆ" ห้ามใช้ getSession() เด็ดขาด!
-        const { data: { user }, error } = await supabase.auth.getUser();
+        // 🟢 2. ใช้ getSession() อ่านกุญแจจากในเครื่องก่อน (บราวเซอร์ตื่นปุ๊บ อ่านได้ปั๊บ ไม่ต้องรอเน็ต)
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        // 🔴 3. ถ้า Server บอกว่า Token พัง หมดอายุ หรือดึงไม่ขึ้น ให้โยน Error ทิ้งทันที!
-        if (error || !user) {
-          throw new Error("Token is dead or expired on server");
-        }
+        if (sessionError) throw sessionError;
 
-        // 4. ถ้าผ่านด่าน Server มาได้ แปลว่าของแท้ 100% ก็ดึง Profile ต่อได้เลย
-        if (mounted) {
-          setUser(user);
-          await fetchProfileData(user.id);
+        if (session?.user) {
+          // โหลดข้อมูลขึ้นหน้าจอทันที เพื่อให้แอปทำงานต่อได้ไม่สะดุด
+          if (mounted) setUser(session.user);
+          await fetchProfileData(session.user.id);
+
+          // 🟢 3. แอบส่งกุญแจไปเช็คกับ Server เบื้องหลัง (Background Verification)
+          supabase.auth.getUser().then(({ error }) => {
+            // สำคัญมาก: จะเตะออกก็ต่อเมื่อ Server ยืนยันว่า "กุญแจพังจริงๆ" เท่านั้น! 
+            // (AuthApiError / status 401, 403) จะไม่เตะออกถ้าแค่เน็ตกระตุก
+            if (error && (error.status === 401 || error.status === 403 || error.name === 'AuthApiError')) {
+              console.warn("ตรวจพบ Token หมดอายุจริงๆ, กำลังล้างข้อมูล...");
+              localStorage.clear();
+              sessionStorage.clear();
+              window.location.href = "/";
+            }
+          });
+
+        } else {
+          if (mounted) setLoading(false);
         }
 
       } catch (error) {
-        console.log("ล้าง Session ผีหลอก (Ghost Session Cleared):", error);
-        
-        // 🧹 5. พิธีปัดเป่า: ล้างทุกอย่างให้กลายเป็น Guest ทันที
+        console.error("เกิดข้อผิดพลาดรุนแรงในระบบ Auth:", error);
         if (mounted) {
           setUser(null);
           setProfile(null);
           setUserRoles(null);
           _setCurrentRole(null);
-          localStorage.clear();
-          sessionStorage.clear();
           setLoading(false);
         }
       } finally {
