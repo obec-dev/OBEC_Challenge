@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../contexts/AuthContext";
@@ -22,82 +22,75 @@ export default function ReviewPage() {
   const [teams, setTeams] = useState<ProjectTeam[]>([]);
   const [schoolName, setSchoolName] = useState("");
   const [pageLoading, setPageLoading] = useState(true);
+  
+  // 🟢 State สำหรับปุ่มกดรีเฟรชเอง
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // 1. ตรวจสอบสิทธิ์ 
+  // 🔐 แม่กุญแจ! ป้องกันการดึงข้อมูลซ้ำซ้อนตอนสลับ Tab
+  const hasFetched = useRef(false);
+
   useEffect(() => {
     if (authLoading) return;
-    // 🛡️ เช็คจาก user?.id แทน user ทั้งก้อน ป้องกัน useEffect ทำงานซ้ำตอน Token Refreshed
-    if (!user?.id || currentRole !== "school_admin") {
+    if (!user || currentRole !== "school_admin") {
       router.push("/");
     }
-  }, [user?.id, currentRole, authLoading, router]);
+  }, [user, currentRole, authLoading, router]);
 
-  // 2. ดึงข้อมูลแบบคลีนๆ (กันหมุนค้าง 100%)
-  useEffect(() => {
-    let isMounted = true;
-    
-    // 🛡️ ก๊อกสุดท้าย: ถ้าอะไรก็ตามทำให้โหลดเกิน 8 วินาที ให้บังคับหยุดหมุนทันที
-    const fallbackTimer = setTimeout(() => {
-      if (isMounted) setPageLoading(false);
-    }, 8000);
+  // 🛠️ แยกฟังก์ชันดึงข้อมูลออกมา เพื่อให้กดปุ่มเรียกใช้เองได้
+  const fetchTeamsData = async (isManualRefresh = false) => {
+    if (!profile?.school_id) return;
 
-    async function loadData() {
-      if (!profile?.school_id) {
-        if (isMounted) setPageLoading(false);
-        return;
+    // ถ้ากดปุ่มให้โชว์โหลดที่ปุ่ม ถ้าโหลดครั้งแรกให้โชว์โหลดเต็มจอ
+    if (isManualRefresh) setIsRefreshing(true);
+    else setPageLoading(true);
+
+    try {
+      const { data: schoolData } = await supabase
+        .from("schools")
+        .select("school_name, district_name")
+        .eq("id", profile.school_id)
+        .single();
+      
+      if (schoolData) {
+        setSchoolName(`${schoolData.school_name} (${schoolData.district_name})`);
       }
 
-      try {
-        // ดึงชื่อโรงเรียน
-        const { data: schoolData } = await supabase
-          .from("schools")
-          .select("school_name, district_name")
-          .eq("id", profile.school_id)
-          .single();
-        
-        if (schoolData && isMounted) {
-          setSchoolName(`${schoolData.school_name} (${schoolData.district_name})`);
-        }
+      const { data: teamsData, error } = await supabase
+        .from("project_teams")
+        .select("*")
+        .eq("school_id", profile.school_id)
+        .order("id", { ascending: false });
 
-        // ดึงข้อมูลผลงาน
-        const { data: teamsData, error } = await supabase
-          .from("project_teams")
-          .select("*")
-          .eq("school_id", profile.school_id)
-          .order("id", { ascending: false });
+      if (error) throw error;
 
-        if (error) throw error;
-
-        if (isMounted && teamsData) {
-          setTeams(teamsData as ProjectTeam[]);
-        }
-      } catch (error) {
-        console.error("โหลดข้อมูล Review ผิดพลาด:", error);
-      } finally {
-        if (isMounted) {
-          setPageLoading(false); // หยุดหมุน
-          clearTimeout(fallbackTimer); // ยกเลิกตัวจับเวลาฉุกเฉิน
-        }
+      if (teamsData) {
+        setTeams(teamsData as ProjectTeam[]);
       }
+    } catch (error) {
+      console.error("โหลดข้อมูล Review ผิดพลาด:", error);
+      if (isManualRefresh) alert("❌ ไม่สามารถดึงข้อมูลใหม่ได้ กรุณาลองอีกครั้ง");
+    } finally {
+      setPageLoading(false);
+      setIsRefreshing(false);
     }
+  };
 
+  // 🛠️ useEffect สำหรับดึงข้อมูลตอนเปิดหน้าครั้งแรก (ทำงานแค่รอบเดียว!)
+  useEffect(() => {
     if (!authLoading) {
-      if (profile?.school_id) {
-        loadData();
+      if (profile) {
+        // ตรวจสอบแม่กุญแจ ถ้ายังไม่เคยโหลด ให้โหลดแล้วล็อคทันที
+        if (!hasFetched.current) {
+          hasFetched.current = true;
+          fetchTeamsData();
+        }
       } else {
         setPageLoading(false);
-        clearTimeout(fallbackTimer);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, profile]);
 
-    return () => {
-      isMounted = false;
-      clearTimeout(fallbackTimer);
-    };
-  // 🛡️ เช็คจาก profile?.school_id แทน profile ทั้งก้อน
-  }, [profile?.school_id, authLoading]);
-
-  // UI ส่วน Loading
   if (authLoading || pageLoading) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center bg-[var(--background)]">
@@ -109,7 +102,6 @@ export default function ReviewPage() {
 
   if (currentRole !== "school_admin") return null;
 
-  // UI ส่วนแสดงผลหลัก
   return (
     <main className="min-h-screen bg-[var(--background)] py-12 px-4 flex justify-center items-start relative pb-24">
       <div className="w-full max-w-4xl relative z-10">
@@ -119,12 +111,23 @@ export default function ReviewPage() {
             <h1 className="text-3xl font-extrabold text-[var(--secondary-blue)]">แดชบอร์ดผลงาน</h1>
             <p className="text-gray-500 mt-2">จัดการและตรวจสอบผลงานทั้งหมดของโรงเรียนคุณ</p>
           </div>
-          <Link 
-            href="/submission" 
-            className="bg-[var(--accent-red)] text-white px-6 py-3 rounded-full font-bold hover:bg-red-700 transition-all shadow-md hover:-translate-y-0.5 flex items-center gap-2"
-          >
-            <span className="text-xl">+</span> สร้างผลงานใหม่
-          </Link>
+          
+          {/* 🟢 เพิ่มปุ่มรีเฟรช วางคู่กับปุ่มสร้างผลงานใหม่ */}
+          <div className="flex gap-3 w-full md:w-auto">
+            <button 
+              onClick={() => fetchTeamsData(true)}
+              disabled={isRefreshing}
+              className="flex-1 md:flex-none bg-white border-2 border-gray-200 text-gray-700 px-6 py-3 rounded-full font-bold hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isRefreshing ? "⏳ กำลังโหลด..." : "🔄 รีเฟรช"}
+            </button>
+            <Link 
+              href="/submission" 
+              className="flex-1 md:flex-none bg-[var(--accent-red)] text-white px-6 py-3 rounded-full font-bold hover:bg-red-700 transition-all shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-2"
+            >
+              <span className="text-xl">+</span> สร้างผลงานใหม่
+            </Link>
+          </div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
