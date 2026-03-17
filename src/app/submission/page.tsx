@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, Suspense } from "react";
+import { useEffect, useMemo, useState, Suspense, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "../contexts/AuthContext";
@@ -18,7 +18,7 @@ function SubmissionForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get("id"); 
-  const isEditMode = !!editId; // 🟢 เช็คว่าเป็นโหมด Edit หรือไม่
+  const isEditMode = !!editId;
 
   const { user, profile, currentRole, loading: authLoading } = useAuth();
   
@@ -26,7 +26,10 @@ function SubmissionForm() {
   const [schoolName, setSchoolName] = useState("");
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  
+  // 🟢 แยก State Loading ควบคุมเฉพาะส่วน Form
   const [pageLoading, setPageLoading] = useState(true);
+  const hasInit = useRef(false); // 🔐 แม่กุญแจกันสลับ Tab
 
   const [draft, setDraft] = useState({ team_name: "", video_url: "" });
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -71,11 +74,15 @@ function SubmissionForm() {
     if (!user || currentRole !== "school_admin") router.push("/");
   }, [user, currentRole, authLoading, router]);
 
+  // 🛠️ โหลดข้อมูลครั้งแรกและล็อคกุญแจทันที
   useEffect(() => {
+    if (authLoading || !profile) return;
+    
+    // กัน Re-render และการสลับ Tab
+    if (hasInit.current) return;
+    hasInit.current = true;
+
     async function loadData() {
-      // 🛡️ Safety Timeout: ถ้าโหลดเกิน 8 วินาที ให้บังคับหยุดหมุนทันที (แก้บักค้างตอนสลับ Tab)
-      const safetyTimer = setTimeout(() => setPageLoading(false), 8000);
-      
       try {
         if (!profile?.school_id) return;
 
@@ -92,21 +99,15 @@ function SubmissionForm() {
       } catch (error) {
         console.error("โหลดข้อมูลผิดพลาด:", error);
       } finally {
-        clearTimeout(safetyTimer); // ยกเลิกตัวจับเวลาถ้าโหลดเสร็จก่อน
         setPageLoading(false);
       }
     }
 
-    if (!authLoading) {
-      if (profile) loadData();
-      else setPageLoading(false);
-    }
+    loadData();
   }, [profile, authLoading, editId, isEditMode]);
 
-  // 🟢 ระบบ Autosave (จะทำงานเฉพาะตอนสร้าง New เท่านั้น!)
   useEffect(() => {
-    if (isEditMode) return; // ถ้าเป็นหน้า Edit ให้ยกเลิกการทำงานของ Autosave ไปเลย
-
+    if (isEditMode) return;
     let timer: NodeJS.Timeout;
     if (draft.team_name || draft.video_url) {
       timer = setTimeout(() => { handleAutoSave(false); }, 3000);
@@ -164,8 +165,6 @@ function SubmissionForm() {
     }
 
     setSaving(true);
-    
-    // ไม่ว่าจะเป็น Draft หรือ Edit พอกดปุ่มหลักตรงนี้ สถานะจะเป็น submitted เสมอ
     const payload = { 
       status: "submitted",
       pdf_url: finalPdfUrl,
@@ -191,11 +190,12 @@ function SubmissionForm() {
     setSaving(false);
   }
 
-  if (authLoading || pageLoading) {
+  // 🔴 Loading เฉพาะระบบ Auth เท่านั้น
+  if (authLoading) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--primary-blue)] mb-4"></div>
-        <p className="text-[var(--secondary-blue)] font-medium">กำลังเตรียมฟอร์มผลงาน...</p>
+        <p className="text-[var(--secondary-blue)] font-medium">กำลังตรวจสอบสิทธิ์...</p>
       </div>
     );
   }
@@ -204,6 +204,7 @@ function SubmissionForm() {
 
   return (
     <div className="relative overflow-hidden pb-24">
+      {/* Toast & Modal (โค้ดเดิม) */}
       <div className={`fixed top-24 right-4 z-50 transition-all duration-300 transform ${toast.show ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0 pointer-events-none'}`}>
         <div className={`px-6 py-4 rounded-xl shadow-lg border font-bold flex items-center gap-3 ${toast.type === 'success' ? 'bg-white border-green-200 text-green-700' : 'bg-white border-red-200 text-red-700'}`}>
           <span className="text-xl">{toast.type === 'success' ? '✅' : '⚠️'}</span>
@@ -227,6 +228,7 @@ function SubmissionForm() {
         </div>
       )}
 
+      {/* 🟢 เริ่มเรนเดอร์โครงสร้างหลักทันที (ไม่โดน Loading บัง) */}
       <div className="w-full max-w-3xl mx-auto relative z-10">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-extrabold text-[var(--secondary-blue)]">
@@ -235,93 +237,99 @@ function SubmissionForm() {
           <p className="text-gray-500 mt-2">กรุณาตรวจสอบข้อมูลและแนบไฟล์ให้ครบถ้วนก่อนกดยืนยัน</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden min-h-[500px]">
           <div className="bg-blue-50 border-b border-blue-100 p-6 flex items-start gap-4">
             <div className="text-4xl">🏫</div>
             <div className="flex-1">
               <p className="text-sm font-bold text-[var(--primary-blue)] uppercase tracking-wide">กำลังดำเนินการในนาม</p>
-              <h2 className="text-xl font-bold text-[var(--secondary-blue)]">{schoolName || "ไม่พบข้อมูลโรงเรียน"}</h2>
+              <h2 className="text-xl font-bold text-[var(--secondary-blue)]">{schoolName || "กำลังโหลดข้อมูล..."}</h2>
             </div>
             <div className="text-right text-sm">
-              {saving ? <span className="text-orange-500 animate-pulse font-medium">⏳ กำลังบันทึก...</span> : (lastSaved && !isEditMode) ? <span className="text-green-600 font-medium">✅ บันทึกร่างอัตโนมัติล่าสุด {lastSaved.toLocaleTimeString('th-TH')}</span> : null}
+              {saving ? <span className="text-orange-500 animate-pulse font-medium">⏳ กำลังบันทึก...</span> : (lastSaved && !isEditMode) ? <span className="text-green-600 font-medium">✅ ร่างอัตโนมัติล่าสุด {lastSaved.toLocaleTimeString('th-TH')}</span> : null}
             </div>
           </div>
 
-          <div className="p-8 space-y-8">
-            <div>
-              <label className="block text-base font-bold text-[var(--secondary-blue)] mb-2">1. ชื่อโครงงาน / นวัตกรรม <span className="text-red-500">*</span></label>
-              <input type="text" placeholder="ระบุชื่อผลงานของทีม" value={draft.team_name} onChange={(e) => setDraft({ ...draft, team_name: e.target.value })} className="w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-gray-800 focus:bg-white focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all" />
+          {/* 🟢 Loading ซ่อนอยู่แค่ตรงพื้นที่ฟอร์ม */}
+          {pageLoading ? (
+            <div className="flex flex-col items-center justify-center py-20 opacity-70">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[var(--primary-blue)] mb-4"></div>
+              <p className="text-[var(--secondary-blue)] font-medium">กำลังเตรียมแบบฟอร์ม...</p>
             </div>
+          ) : (
+            <div className="p-8 space-y-8 animate-in fade-in duration-500">
+              <div>
+                <label className="block text-base font-bold text-[var(--secondary-blue)] mb-2">1. ชื่อโครงงาน / นวัตกรรม <span className="text-red-500">*</span></label>
+                <input type="text" placeholder="ระบุชื่อผลงานของทีม" value={draft.team_name} onChange={(e) => setDraft({ ...draft, team_name: e.target.value })} className="w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-gray-800 focus:bg-white focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all" />
+              </div>
 
-            <div>
-              <label className="block text-base font-bold text-[var(--secondary-blue)] mb-2">2. เอกสารรูปเล่ม (ไฟล์ PDF) <span className="text-red-500">*</span></label>
-              <div className="mt-2 flex justify-center rounded-xl border-2 border-dashed border-gray-300 px-6 py-8 hover:bg-gray-50 transition-colors relative group">
-                <div className="text-center">
-                  <div className="text-4xl mb-3">{pdfFile || team?.pdf_url ? "📄" : "📁"}</div>
-                  <div className="mt-4 flex text-sm leading-6 text-gray-600 justify-center">
-                    <label className="relative cursor-pointer rounded-md bg-white font-semibold text-[var(--primary-blue)] focus-within:outline-none focus-within:ring-2 focus-within:ring-[var(--primary-blue)] hover:text-blue-500">
-                      <span>อัปโหลดไฟล์ PDF</span>
-                      <input type="file" accept=".pdf,application/pdf" className="sr-only" onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file && file.type === "application/pdf") {
-                          setPdfFile(file);
-                          showToast(`เลือกไฟล์ ${file.name} แล้ว`, "success");
-                        } else {
-                          showToast("กรุณาอัปโหลดเฉพาะไฟล์นามสกุล .pdf เท่านั้น", "error");
-                          e.target.value = "";
-                        }
-                      }} />
-                    </label>
+              <div>
+                <label className="block text-base font-bold text-[var(--secondary-blue)] mb-2">2. เอกสารรูปเล่ม (ไฟล์ PDF) <span className="text-red-500">*</span></label>
+                <div className="mt-2 flex justify-center rounded-xl border-2 border-dashed border-gray-300 px-6 py-8 hover:bg-gray-50 transition-colors relative group">
+                  <div className="text-center">
+                    <div className="text-4xl mb-3">{pdfFile || team?.pdf_url ? "📄" : "📁"}</div>
+                    <div className="mt-4 flex text-sm leading-6 text-gray-600 justify-center">
+                      <label className="relative cursor-pointer rounded-md bg-white font-semibold text-[var(--primary-blue)] focus-within:outline-none focus-within:ring-2 focus-within:ring-[var(--primary-blue)] hover:text-blue-500">
+                        <span>อัปโหลดไฟล์ PDF</span>
+                        <input type="file" accept=".pdf,application/pdf" className="sr-only" onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file && file.type === "application/pdf") {
+                            setPdfFile(file);
+                            showToast(`เลือกไฟล์ ${file.name} แล้ว`, "success");
+                          } else {
+                            showToast("กรุณาอัปโหลดเฉพาะไฟล์นามสกุล .pdf เท่านั้น", "error");
+                            e.target.value = "";
+                          }
+                        }} />
+                      </label>
+                    </div>
+                    <p className="text-xs leading-5 text-gray-500 mt-2">
+                      {pdfFile ? <span className="font-bold text-[var(--secondary-blue)]">เตรียมอัปโหลด: {pdfFile.name}</span> : team?.pdf_url ? <span className="font-bold text-green-600">✅ อัปโหลดไฟล์ไว้แล้ว (กดเลือกใหม่เพื่อเปลี่ยนไฟล์)</span> : "ขนาดไฟล์ไม่เกิน 50MB (PDF เท่านั้น)"}
+                    </p>
                   </div>
-                  <p className="text-xs leading-5 text-gray-500 mt-2">
-                    {pdfFile ? <span className="font-bold text-[var(--secondary-blue)]">เตรียมอัปโหลด: {pdfFile.name}</span> : team?.pdf_url ? <span className="font-bold text-green-600">✅ อัปโหลดไฟล์ไว้แล้ว (กดเลือกใหม่เพื่อเปลี่ยนไฟล์)</span> : "ขนาดไฟล์ไม่เกิน 50MB (PDF เท่านั้น)"}
-                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-base font-bold text-[var(--secondary-blue)] mb-2">3. ลิงก์คลิปวิดีโอนำเสนอ <span className="text-red-500">*</span></label>
+                <p className="text-xs text-gray-500 mb-2">อัปโหลดลง Google Drive (แชร์เป็นไฟล์เท่านั้น) หรือ YouTube</p>
+                <input type="url" placeholder="https://drive.google.com/file/d/... หรือ https://youtu.be/..." value={draft.video_url} onChange={(e) => {
+                  const url = e.target.value;
+                  setDraft({ ...draft, video_url: url });
+                  validateVideoUrl(url);
+                }} className={`w-full rounded-xl border bg-gray-50 px-4 py-3 text-gray-800 focus:bg-white focus:outline-none transition-all ${videoError ? "border-red-400 focus:ring-red-100 focus:border-red-500" : "border-gray-300 focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-blue-100"}`} />
+                {videoError && <p className="mt-2 text-sm font-bold text-red-500 animate-in fade-in zoom-in duration-300">{videoError}</p>}
+              </div>
+
+              <div className="pt-8 mt-4 border-t border-gray-100">
+                <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 text-center">
+                  <h3 className="font-bold text-slate-800 mb-2">จัดการผลงาน</h3>
+                  <p className="text-sm text-slate-600 mb-6">กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนกดยืนยัน</p>
+                  
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                    {isEditMode ? (
+                      <>
+                        <button onClick={() => router.push('/review')} className="w-full sm:w-auto min-w-[150px] rounded-xl bg-white border-2 border-gray-300 px-8 py-4 text-gray-600 font-bold text-lg shadow-sm hover:bg-gray-50 transition-all flex justify-center items-center gap-2">
+                          ❌ ยกเลิก
+                        </button>
+                        <button onClick={triggerSubmit} disabled={!canSubmit || saving} className="w-full sm:w-auto min-w-[200px] rounded-xl bg-[var(--primary-blue)] px-8 py-4 text-white font-bold text-lg shadow-md hover:bg-[var(--secondary-blue)] transition-all disabled:opacity-50 flex justify-center items-center gap-2">
+                          {saving ? "กำลังประมวลผล..." : "💾 บันทึกการแก้ไข"}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => handleAutoSave(true)} disabled={saving || (!draft.team_name && !draft.video_url)} className="w-full sm:w-auto min-w-[200px] rounded-xl bg-white border-2 border-[var(--primary-blue)] px-8 py-4 text-[var(--primary-blue)] font-bold text-lg shadow-sm hover:bg-blue-50 transition-all disabled:opacity-50 flex justify-center items-center gap-2">
+                          {saving ? "กำลังประมวลผล..." : "💾 บันทึกแบบร่าง"}
+                        </button>
+                        <button onClick={triggerSubmit} disabled={!canSubmit || saving} className="w-full sm:w-auto min-w-[200px] rounded-xl bg-[var(--accent-green)] px-8 py-4 text-white font-bold text-lg shadow-md hover:bg-green-600 transition-all disabled:opacity-50 flex justify-center items-center gap-2">
+                          {saving ? "กำลังประมวลผล..." : "🚀 ยืนยันการส่งผลงาน"}
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-
-            <div>
-              <label className="block text-base font-bold text-[var(--secondary-blue)] mb-2">3. ลิงก์คลิปวิดีโอนำเสนอ <span className="text-red-500">*</span></label>
-              <p className="text-xs text-gray-500 mb-2">อัปโหลดลง Google Drive (แชร์เป็นไฟล์เท่านั้น) หรือ YouTube</p>
-              <input type="url" placeholder="https://drive.google.com/file/d/... หรือ https://youtu.be/..." value={draft.video_url} onChange={(e) => {
-                const url = e.target.value;
-                setDraft({ ...draft, video_url: url });
-                validateVideoUrl(url);
-              }} className={`w-full rounded-xl border bg-gray-50 px-4 py-3 text-gray-800 focus:bg-white focus:outline-none transition-all ${videoError ? "border-red-400 focus:ring-red-100 focus:border-red-500" : "border-gray-300 focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-blue-100"}`} />
-              {videoError && <p className="mt-2 text-sm font-bold text-red-500 animate-in fade-in zoom-in duration-300">{videoError}</p>}
-            </div>
-
-            <div className="pt-8 mt-4 border-t border-gray-100">
-              <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 text-center">
-                <h3 className="font-bold text-slate-800 mb-2">จัดการผลงาน</h3>
-                <p className="text-sm text-slate-600 mb-6">กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนกดยืนยัน</p>
-                
-                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                  {isEditMode ? (
-                    /* 🔴 ปุ่มสำหรับโหมด Edit (ยกเลิก / บันทึกแก้ไข) */
-                    <>
-                      <button onClick={() => router.push('/review')} className="w-full sm:w-auto min-w-[150px] rounded-xl bg-white border-2 border-gray-300 px-8 py-4 text-gray-600 font-bold text-lg shadow-sm hover:bg-gray-50 transition-all flex justify-center items-center gap-2">
-                        ❌ ยกเลิก
-                      </button>
-                      <button onClick={triggerSubmit} disabled={!canSubmit || saving} className="w-full sm:w-auto min-w-[200px] rounded-xl bg-[var(--primary-blue)] px-8 py-4 text-white font-bold text-lg shadow-md hover:bg-[var(--secondary-blue)] transition-all disabled:opacity-50 flex justify-center items-center gap-2">
-                        {saving ? "กำลังประมวลผล..." : "💾 บันทึกการแก้ไข"}
-                      </button>
-                    </>
-                  ) : (
-                    /* 🟢 ปุ่มสำหรับโหมด New (ร่าง / ยืนยัน) */
-                    <>
-                      <button onClick={() => handleAutoSave(true)} disabled={saving || (!draft.team_name && !draft.video_url)} className="w-full sm:w-auto min-w-[200px] rounded-xl bg-white border-2 border-[var(--primary-blue)] px-8 py-4 text-[var(--primary-blue)] font-bold text-lg shadow-sm hover:bg-blue-50 transition-all disabled:opacity-50 flex justify-center items-center gap-2">
-                        {saving ? "กำลังประมวลผล..." : "💾 บันทึกแบบร่าง"}
-                      </button>
-                      <button onClick={triggerSubmit} disabled={!canSubmit || saving} className="w-full sm:w-auto min-w-[200px] rounded-xl bg-[var(--accent-green)] px-8 py-4 text-white font-bold text-lg shadow-md hover:bg-green-600 transition-all disabled:opacity-50 flex justify-center items-center gap-2">
-                        {saving ? "กำลังประมวลผล..." : "🚀 ยืนยันการส่งผลงาน"}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
@@ -334,7 +342,7 @@ export default function SubmissionPage() {
       <Suspense fallback={
         <div className="flex flex-col items-center justify-center pt-20">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--primary-blue)] mb-4"></div>
-          <p className="text-[var(--secondary-blue)] font-medium">กำลังโหลดข้อมูล...</p>
+          <p className="text-[var(--secondary-blue)] font-medium">กำลังเตรียมโหลดข้อมูล...</p>
         </div>
       }>
         <SubmissionForm />
