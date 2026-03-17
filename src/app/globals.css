@@ -1,0 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  /* โทนสีใหม่สไตล์ CONNEXT ED */
+  --background: #f4f7f9;
+  --foreground: #333333;
+  --primary-blue: #112652;    /* กรมท่าเข้ม */
+  --secondary-blue: #1a3b7c;  /* น้ำเงินองค์กร */
+  --accent-red: #da291c;      /* แดงสดตัดความเลี่ยน */
+  --accent-orange: #f4a261;
+  --accent-green: #2a9d8f;
+  --light-blue: #e8f0fe;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Prompt', sans-serif; /* บังคับใช้ฟอนต์ Prompt */
+}
+
+/* --- คง Class เดิมของพี่ไว้ เผื่อมีการใช้งานใน Component อื่น --- */
+.bg-primary {
+  background-color: var(--primary-blue);
+}
+
+.text-primary {
+  color: var(--primary-blue);
+}
+
+.bg-secondary {
+  background-color: var(--secondary-blue);
+}
+
+.text-secondary {
+  color: var(--secondary-blue);
+}
