@@ -30,8 +30,25 @@ export default function RoleSelector({ onRoleSelected }: { onRoleSelected: (role
     loadUserRoles();
   }, []);
 
+  // 🟢 ฟังก์ชันไม้ตาย ล้างไส้ติ่งและเตะกลับหน้าแรก
+  const forceLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error("Logout error (ignoring):", e);
+    } finally {
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.href = "/";
+    }
+  };
+
   const loadUserRoles = async () => {
     try {
+      // 🟢 เช็คว่า Token ยังมีชีวิตอยู่ไหมก่อนทำอย่างอื่น
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error("Auth Token is dead");
+
       // Get user roles
       const { data: rolesData, error: rolesError } = await supabase.rpc('get_user_roles');
       if (rolesError) throw rolesError;
@@ -41,13 +58,15 @@ export default function RoleSelector({ onRoleSelected }: { onRoleSelected: (role
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .eq('id', user.id)
         .single();
 
       if (profileError) throw profileError;
       setProfile(profileData);
     } catch (error) {
-      console.error('Error loading user roles:', error);
+      console.error('Error loading user roles (Ghost Session):', error);
+      // 🧹 ถ้า Token พัง ให้เตะออกอัตโนมัติ ไม่ต้องรอให้ผู้ใช้กด!
+      forceLogout();
     } finally {
       setLoading(false);
     }
@@ -61,13 +80,8 @@ export default function RoleSelector({ onRoleSelected }: { onRoleSelected: (role
     );
   }
 
-  if (!userRoles || !profile) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-red-600">ไม่พบข้อมูลผู้ใช้</div>
-      </div>
-    );
-  }
+  // ถ้าถูกเตะออกไปแล้ว (profile เป็น null) จะไม่โชว์ UI Error หลอกตาผู้ใช้อีก
+  if (!userRoles || !profile) return null;
 
   const availableRoles = [];
 
@@ -129,8 +143,9 @@ export default function RoleSelector({ onRoleSelected }: { onRoleSelected: (role
         </div>
 
         <div className="mt-8 text-center">
+          {/* 🟢 เปลี่ยนมาใช้ฟังก์ชัน forceLogout แทนคำสั่งเดิม */}
           <button
-            onClick={() => supabase.auth.signOut()}
+            onClick={forceLogout}
             className="text-blue-500 hover:text-blue-700 text-sm underline"
           >
             ออกจากระบบ
