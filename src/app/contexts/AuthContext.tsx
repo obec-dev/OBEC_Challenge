@@ -44,7 +44,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true; 
 
-    // 🛡️ 1. จัดการ Sync ข้อมูลเมื่อมีการเปลี่ยน Role จาก Tab อื่น
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'currentRole' && mounted) {
         _setCurrentRole(e.newValue);
@@ -52,40 +51,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     window.addEventListener('storage', handleStorageChange);
 
-    // 🛡️ 2. ย้าย fetchProfileData เข้ามาใน useEffect ป้องกัน Stale Closure
-    const fetchProfileData = async (userId: string) => {
-      const safetyTimer = setTimeout(() => {
-        if (mounted) setLoading(false); // บังคับหยุดหมุนถ้าเกิน 8 วินาที
-      }, 8000);
+    // 🛡️ 1. ระบบดึง Profile แบบ "ถึกทน" (Retry Mechanism) แก้บักเน็ตกระตุกตอนรีเฟรช
+    const fetchProfileData = async (userId: string, retries = 3) => {
+      for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
 
-      try {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .single();
+          if (profileError) throw profileError;
 
-        if (profileData && mounted) {
-          setProfile(profileData);
-          const { data: rolesData } = await supabase.rpc('get_user_roles');
-          if (rolesData && mounted) setUserRoles(rolesData);
+          if (mounted) setProfile(profileData);
+
+          const { data: rolesData, error: rolesError } = await supabase.rpc('get_user_roles');
+          if (!rolesError && mounted) setUserRoles(rolesData);
+
+          return; // 🟢 ถ้าสำเร็จแล้ว ให้กระโดดออกจาก Loop จบการทำงานทันที
+        } catch (error) {
+          console.warn(`[Auth] โหลด Profile ไม่สำเร็จ (รอบที่ ${attempt}/${retries}) กำลังลองใหม่...`, error);
+          if (attempt < retries) {
+            // ⏳ รอ 1 วินาที ให้เบราว์เซอร์ต่อเน็ตให้เสร็จ แล้วค่อยวิ่งไปถาม DB ใหม่
+            await new Promise(resolve => setTimeout(resolve, 1000)); 
+          }
         }
-      } catch (error) {
-        console.error('Error loading profile:', error);
-      } finally {
-        clearTimeout(safetyTimer); // ยกเลิกตัวจับเวลาถ้าทำเสร็จก่อน
-        if (mounted) setLoading(false); 
       }
     };
 
     const initAuth = async () => {
-      // 🛡️ ปรับ Timeout ให้ยาวขึ้นเผื่อบราวเซอร์หลับลึก
-      const authFallback = setTimeout(() => {
+      // ตัวจับเวลาเผื่อฉุกเฉิน
+      const safetyTimer = setTimeout(() => {
         if (mounted) setLoading(false);
       }, 8000);
 
       try {
-        // 1. ดึง Role เก่าที่เคยเซฟไว้
         const storedRole = localStorage.getItem('currentRole');
         if (storedRole) {
           _setCurrentRole(storedRole);
@@ -94,50 +94,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.setItem('currentRole', 'personal');
         }
 
-        // 🟢 2. ใช้ getSession() อ่านกุญแจจากในเครื่องก่อน (บราวเซอร์ตื่นปุ๊บ อ่านได้ปั๊บ ไม่ต้องรอเน็ต)
+        // อ่านกุญแจในเครื่อง (ไวสุด)
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) throw sessionError;
 
         if (session?.user) {
-          // โหลดข้อมูลขึ้นหน้าจอทันที เพื่อให้แอปทำงานต่อได้ไม่สะดุด
           if (mounted) setUser(session.user);
+          
+          // 🚀 เรียกใช้ระบบดึงข้อมูลแบบใหม่ที่มีความพยายาม 3 รอบ!
           await fetchProfileData(session.user.id);
 
-          // 🟢 3. แอบส่งกุญแจไปเช็คกับ Server เบื้องหลัง (Background Verification)
+          // เช็ค Token กับ Server เบื้องหลังแบบเงียบๆ
           supabase.auth.getUser().then(({ error }) => {
-            // สำคัญมาก: จะเตะออกก็ต่อเมื่อ Server ยืนยันว่า "กุญแจพังจริงๆ" เท่านั้น! 
-            // (AuthApiError / status 401, 403) จะไม่เตะออกถ้าแค่เน็ตกระตุก
             if (error && (error.status === 401 || error.status === 403 || error.name === 'AuthApiError')) {
-              console.warn("ตรวจพบ Token หมดอายุจริงๆ, กำลังล้างข้อมูล...");
-              localStorage.clear();
-              sessionStorage.clear();
-              window.location.href = "/";
+              console.error("Token หมดอายุของจริง ล้างเครื่อง!");
+              if (mounted) {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = "/";
+              }
             }
           });
-
         } else {
           if (mounted) setLoading(false);
         }
-
       } catch (error) {
-        console.error("เกิดข้อผิดพลาดรุนแรงในระบบ Auth:", error);
+        console.error("Auth Exception:", error);
         if (mounted) {
           setUser(null);
           setProfile(null);
           setUserRoles(null);
-          _setCurrentRole(null);
-          setLoading(false);
         }
       } finally {
-        clearTimeout(authFallback);
+        clearTimeout(safetyTimer);
+        if (mounted) setLoading(false);
       }
     };
 
     initAuth();
 
+    // ดักจับการเปลี่ยนแปลงสถานะ Login
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
+      if (event === 'INITIAL_SESSION') return; // ข้าม เพราะเราใช้ initAuth จัดการไปแล้วเพื่อความชัวร์
 
       setUser(session?.user ?? null);
 
@@ -151,17 +151,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      if (session?.user) {
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-          const existingRole = localStorage.getItem('currentRole');
-          if (!existingRole) {
-            _setCurrentRole('personal');
-            localStorage.setItem('currentRole', 'personal');
-          }
-          await fetchProfileData(session.user.id);
+      if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        const existingRole = localStorage.getItem('currentRole');
+        if (!existingRole) {
+          _setCurrentRole('personal');
+          localStorage.setItem('currentRole', 'personal');
         }
-      } else {
-        setLoading(false);
+        await fetchProfileData(session.user.id);
+        if (mounted) setLoading(false);
+      } else if (!session?.user) {
+        if (mounted) setLoading(false);
       }
     });
 
