@@ -36,13 +36,20 @@ export default function ReviewPage() {
     }
   }, [user, currentRole, authLoading, router]);
 
-  // 2. ฟังก์ชันดึงข้อมูลหลัก (สั่งได้ว่าให้ดึงแบบมีปุ่มหมุน หรือดึงเงียบๆ)
+  // 🛠️ ฟังก์ชันดึงข้อมูลหลัก (มี Safety Timeout ทะลวงบั๊กค้าง)
   const fetchTeamsData = async (isManualRefresh = false) => {
-    if (!profile?.school_id) return;
-
-    if (isManualRefresh) setIsRefreshing(true); // ถ้ากดปุ่ม ให้หมุนที่ปุ่ม
+    // 🛡️ ตัวจับเวลาฉุกเฉิน: บังคับหยุดหมุนถ้าเกิน 8 วินาที
+    const fallbackTimer = setTimeout(() => {
+      setPageLoading(false);
+      setIsRefreshing(false);
+    }, 8000);
 
     try {
+      // 🟢 ย้ายเข้ามาใน try เพื่อให้บล็อก finally ทำงานเสมอ!
+      if (!profile?.school_id) return;
+
+      if (isManualRefresh) setIsRefreshing(true);
+
       const { data: schoolData } = await supabase
         .from("schools")
         .select("school_name, district_name")
@@ -65,8 +72,6 @@ export default function ReviewPage() {
 
       if (teamsData) {
         setTeams(teamsData as ProjectTeam[]);
-        
-        // 💾 SAVE TO CACHE: เซฟข้อมูลล่าสุดลงความจำเบราว์เซอร์
         sessionStorage.setItem(`review_cache_${profile.school_id}`, JSON.stringify({
           schoolName: currentSchoolName,
           teams: teamsData
@@ -76,8 +81,10 @@ export default function ReviewPage() {
       console.error("โหลดข้อมูล Review ผิดพลาด:", error);
       if (isManualRefresh) alert("❌ ไม่สามารถดึงข้อมูลใหม่ได้ กรุณาลองอีกครั้ง");
     } finally {
+      // 🟢 เคลียร์ทุกอย่างให้หยุดหมุน ไม่ว่าจะสำเร็จหรือพัง
+      clearTimeout(fallbackTimer);
       setIsRefreshing(false);
-      setPageLoading(false); // ปิดตัวหมุนในกล่องเสมอเมื่อทำงานเสร็จ
+      setPageLoading(false); 
     }
   };
 

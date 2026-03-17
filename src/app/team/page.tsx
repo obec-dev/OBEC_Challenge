@@ -32,13 +32,18 @@ export default function TeamBuilderPage() {
     }
   }, [user, currentRole, authLoading, router]);
 
-  // 🛠️ ฟังก์ชันดึงข้อมูล (แบบมีระบบ Cache)
+  /// 🛠️ ฟังก์ชันดึงข้อมูล (แบบมีระบบ Cache และ Timeout)
   const fetchTeamData = async (isManualRefresh = false) => {
-    if (!profile?.school_id) return;
-
-    if (isManualRefresh) setIsRefreshing(true);
+    const fallbackTimer = setTimeout(() => {
+      setPageLoading(false);
+      setIsRefreshing(false);
+    }, 8000);
 
     try {
+      if (!profile?.school_id) return;
+
+      if (isManualRefresh) setIsRefreshing(true);
+
       const { data: schoolData } = await supabase
         .from("schools")
         .select("school_name")
@@ -60,8 +65,6 @@ export default function TeamBuilderPage() {
 
       if (data) {
         setProfiles(data);
-        
-        // 💾 เซฟลง Cache
         sessionStorage.setItem(`team_cache_${profile.school_id}`, JSON.stringify({
           schoolName: currentSchoolName,
           profiles: data
@@ -71,6 +74,7 @@ export default function TeamBuilderPage() {
       console.error("เกิดข้อผิดพลาดในการดึงข้อมูล:", error);
       if (isManualRefresh) alert("❌ ไม่สามารถดึงข้อมูลใหม่ได้");
     } finally {
+      clearTimeout(fallbackTimer);
       setIsRefreshing(false);
       setPageLoading(false);
     }

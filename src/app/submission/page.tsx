@@ -82,7 +82,12 @@ function SubmissionForm() {
     if (hasInit.current) return;
     hasInit.current = true;
 
+    // 🛠️ โหลดข้อมูลครั้งแรกและล็อคกุญแจทันที
     async function loadData() {
+      const fallbackTimer = setTimeout(() => {
+        setPageLoading(false);
+      }, 8000);
+
       try {
         if (!profile?.school_id) return;
 
@@ -99,6 +104,7 @@ function SubmissionForm() {
       } catch (error) {
         console.error("โหลดข้อมูลผิดพลาด:", error);
       } finally {
+        clearTimeout(fallbackTimer);
         setPageLoading(false);
       }
     }
