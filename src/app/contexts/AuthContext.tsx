@@ -79,28 +79,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const initAuth = async () => {
-      const storedRole = localStorage.getItem('currentRole');
-      if (storedRole) {
-        _setCurrentRole(storedRole);
-      } else {
-        _setCurrentRole('personal');
-        localStorage.setItem('currentRole', 'personal');
-      }
-
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      // ป้องกัน Error กรณีเน็ตหลุดตอนเปิด Tab
-      if (error) {
-        console.error("Auth Session Error:", error);
+      const authFallback = setTimeout(() => {
         if (mounted) setLoading(false);
-        return;
-      }
+      }, 5000);
 
-      if (session?.user) {
-        if (mounted) setUser(session.user);
-        await fetchProfileData(session.user.id);
-      } else {
-        if (mounted) setLoading(false);
+      try {
+        const storedRole = localStorage.getItem('currentRole');
+        if (storedRole) {
+          _setCurrentRole(storedRole);
+        } else {
+          _setCurrentRole('personal');
+          localStorage.setItem('currentRole', 'personal');
+        }
+
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        // 🔴 ป้องกัน Error กรณีเน็ตหลุดตอนเปิด Tab หรือ Token ตาย
+        if (error) {
+          throw error;
+        }
+
+        if (session?.user) {
+          if (mounted) setUser(session.user);
+          await fetchProfileData(session.user.id);
+        } else {
+          if (mounted) setLoading(false);
+        }
+      } catch (error) {
+        console.error("ระบบ Auth มีปัญหา (Token อาจหมดอายุ):", error);
+        if (mounted) {
+          setUser(null);
+          setProfile(null);
+          setUserRoles(null);
+          _setCurrentRole(null);
+          // 🧹 ล้างไส้ติ่งทิ้งให้หมดเพื่อกันการเกิด Dead Token ซ้ำซ้อน
+          localStorage.clear();
+          sessionStorage.clear();
+          setLoading(false);
+        }
+      } finally {
+        clearTimeout(authFallback);
       }
     };
 
@@ -115,7 +133,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(null);
         setUserRoles(null);
         _setCurrentRole(null);
-        localStorage.removeItem('currentRole');
+        localStorage.clear();
+        sessionStorage.clear();
         setLoading(false);
         return;
       }

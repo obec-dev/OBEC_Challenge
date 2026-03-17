@@ -68,12 +68,18 @@ export function UserProfile() {
     }
   }
 
+  // 🟢 อัปเกรดฟังก์ชันออกจากระบบ (Force Clear & Redirect)
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
     } catch (error) {
-      console.error('Error signing out:', error);
-      alert('เกิดข้อผิดพลาดในการออกจากระบบ');
+      console.error('Error signing out (ignoring):', error);
+    } finally {
+      // ล้างไส้ติ่งทุกอย่างที่ค้างในเบราว์เซอร์
+      localStorage.clear();
+      sessionStorage.clear();
+      // บังคับรีเฟรชกลับหน้าแรก เพื่อให้ React โหลด State ใหม่ทั้งหมดแบบ Guest
+      window.location.href = "/";
     }
   };
 
