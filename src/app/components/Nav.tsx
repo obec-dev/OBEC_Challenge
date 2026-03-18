@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { UserProfile } from './UserProfile';
 import { useAuth } from '../contexts/AuthContext';
+import Image from 'next/image'
 
 export function Nav() {
   const { currentRole, user } = useAuth();
@@ -10,7 +11,7 @@ export function Nav() {
   const getNavigationLinks = () => {
     const baseLinks = [
       { href: "/", label: "หน้าแรก" },
-      { href: "/showcase", label: "นิทรรศการ (Showcase)" },
+      { href: "/showcase", label: "ผลงานนักเรียน" },
     ];
 
     if (currentRole === 'personal') {
@@ -29,47 +30,50 @@ export function Nav() {
   const navigationLinks = getNavigationLinks();
 
   return (
-    // เปลี่ยนเป็นพื้นขาว มีเงาบางๆ และขอบเส้นสีแดงด้านล่าง
-    <nav className="sticky top-0 z-50 w-full bg-white shadow-sm border-b-[3px] border-[var(--accent-red)] transition-all">
+    /*<nav className="sticky top-0 z-50 w-full bg-white shadow-sm border-b-[3px] border-[var(--accent-red)] transition-all">*/
+      <nav className="sticky top-0 z-50 w-full glass-effect transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
-          
-          {/* โลโก้ด้านซ้าย */}
-          <div className="flex-shrink-0 flex items-center gap-2">
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-10 h-10 bg-[var(--primary-blue)] text-white rounded-lg flex items-center justify-center font-bold text-xl group-hover:bg-[var(--accent-red)] transition-colors">
-                O
-              </div>
-              <div>
-                <h1 className="font-extrabold text-[var(--primary-blue)] text-lg leading-none tracking-wide">
-                  OBEC
-                </h1>
-                <p className="text-xs text-gray-500 font-medium">School Challenge</p>
-              </div>
+
+          {/* 🟢 กลุ่มด้านซ้าย: จับโลโก้ และ ลิงก์เมนู มัดรวมกันไว้ใน div นี้ */}
+          <div className="flex items-center gap-8">
+
+            {/* 1. โลโก้ */}
+            <Link href="/" className="flex items-center group">
+              <Image
+                src="/OBEC_Challenge_small.png"
+                alt="OBEC Challenge Logo"
+                width={160}
+                height={40}
+                className="object-contain" // ใช้ object-contain เพื่อให้ภาพไม่บิดเบี้ยว
+              />
             </Link>
+
+            {/* 2. ลิงก์เมนู (ย้ายมาต่อท้ายโลโก้) */}
+            {/* ผมแอบเติม border-l-2 pl-8 เพื่อทำเส้นคั่นบางๆ ระหว่างโลโก้กับเมนูให้ด้วยครับ ถ้าไม่ชอบลบออกได้เลย */}
+            <div className="hidden md:flex space-x-8 border-l-2 border-gray-100 pl-8">
+              {navigationLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="text-[var(--primary-blue)] font-medium hover:text-[var(--accent-red)] transition-colors py-2"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+
           </div>
 
-          {/* ลิงก์ตรงกลาง */}
-          <div className="hidden md:flex space-x-8">
-            {navigationLinks.map((link) => (
-              <Link 
-                key={link.href} 
-                href={link.href} 
-                className="text-[var(--primary-blue)] font-medium hover:text-[var(--accent-red)] transition-colors py-2"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
-
-          {/* โปรไฟล์ด้านขวา */}
+          {/* 🔵 กลุ่มด้านขวา: โปรไฟล์ / ปุ่มล็อกอิน (อยู่ขวาสุดเหมือนเดิม) */}
           <div className="flex items-center">
             {user ? (
               <UserProfile />
             ) : (
-              <Link 
-                href="/auth" 
-                className="bg-[var(--primary-blue)] text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-[var(--secondary-blue)] hover:shadow-md transition-all"
+              <Link
+                href="/auth"
+                /*className="bg-[var(--primary-blue)] text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-[var(--secondary-blue)] hover:shadow-md transition-all"*/
+                className="bg-[var(--primary-blue)] text-white px-6 py-2.5 rounded-full font-bold text-sm transition-all duration-300 hover:bg-[var(--accent-red)] hover:shadow-lg hover:-translate-y-1 active:translate-y-0"
               >
                 เข้าสู่ระบบ
               </Link>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -14,12 +14,14 @@ type Profile = {
 };
 
 export default function TeamBuilderPage() {
+  const supabase = createClient();
+
   const router = useRouter();
   const { user, profile, currentRole, loading: authLoading } = useAuth();
-  
+
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [schoolName, setSchoolName] = useState<string>("");
-  
+
   // 🟢 แยก State สำหรับควบคุม UI
   const [pageLoading, setPageLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -49,7 +51,7 @@ export default function TeamBuilderPage() {
         .select("school_name")
         .eq("id", profile.school_id)
         .single();
-        
+
       let currentSchoolName = "";
       if (schoolData) {
         currentSchoolName = schoolData.school_name;
@@ -82,7 +84,7 @@ export default function TeamBuilderPage() {
 
   useEffect(() => {
     if (authLoading || !profile) return;
-    
+
     if (hasInit.current) return;
     hasInit.current = true;
 
@@ -94,14 +96,14 @@ export default function TeamBuilderPage() {
       setProfiles(parsed.profiles);
       setSchoolName(parsed.schoolName);
       setPageLoading(false);
-      
+
       // ดึงอัปเดตเบื้องหลังแบบเงียบๆ
       fetchTeamData(false);
     } else {
       setPageLoading(true);
       fetchTeamData(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, authLoading]);
 
   const getRoleBadge = (role: string | null) => {
@@ -129,15 +131,15 @@ export default function TeamBuilderPage() {
   return (
     <main className="min-h-screen bg-[var(--background)] py-12 px-4 flex justify-center items-start relative pb-24">
       <div className="w-full max-w-4xl relative z-10">
-        
+
         {/* หัวข้อและปุ่มรีเฟรช (แสดงตลอด ไม่หาย) */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
           <div className="text-center md:text-left">
             <h1 className="text-3xl font-extrabold text-[var(--secondary-blue)]">จัดการสมาชิกทีม</h1>
             <p className="text-gray-500 mt-2">ตรวจสอบสถานะการอบรมของบุคลากรและนักเรียนในโรงเรียนของคุณ</p>
           </div>
-          
-          <button 
+
+          <button
             onClick={() => fetchTeamData(true)}
             disabled={isRefreshing}
             className="w-full md:w-auto bg-white border-2 border-[var(--primary-blue)] text-[var(--primary-blue)] px-6 py-3 rounded-full font-bold hover:bg-blue-50 transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"

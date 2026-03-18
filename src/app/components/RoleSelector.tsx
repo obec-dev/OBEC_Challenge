@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from "@/lib/supabase/client";
 
 type UserRoles = {
   personal_role: string;
@@ -22,6 +22,7 @@ type Profile = {
 };
 
 export default function RoleSelector({ onRoleSelected }: { onRoleSelected: (role: string) => void }) {
+  const supabase = createClient();
   const [userRoles, setUserRoles] = useState<UserRoles | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);

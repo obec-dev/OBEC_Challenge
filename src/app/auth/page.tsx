@@ -2,17 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from "@/lib/supabase/client";
 import type { User } from '@supabase/supabase-js';
 
 export default function AuthPage() {
   const router = useRouter();
+  const supabase = createClient();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [emailForm, setEmailForm] = useState({ email: "", password: "" });
-  const [errorMsg, setErrorMsg] = useState<string | null>(null); // เพิ่ม State จัดการ Error
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -39,8 +40,8 @@ export default function AuthPage() {
 
   const signInWithGoogle = async () => {
     setErrorMsg(null);
-    await supabase.auth.signInWithOAuth({ 
-      provider: "google",
+    await supabase.auth.signInWithOAuth({
+      provider: "google"
     });
   };
 
@@ -65,13 +66,13 @@ export default function AuthPage() {
       setErrorMsg("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร");
       return;
     }
-    
+
     setSaving(true);
     const { error } = await supabase.auth.signUp({
       email: emailForm.email,
       password: emailForm.password,
     });
-    
+
     if (error) {
       setErrorMsg(error.message);
     } else {
@@ -95,14 +96,14 @@ export default function AuthPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[var(--background)] p-4 relative overflow-hidden">
-      
+
       {/* วงกลมตกแต่งฉากหลัง (เข้าธีมเดียวกับหน้า Home) */}
       <div className="absolute top-[-10%] left-[-10%] h-96 w-96 rounded-full bg-[var(--primary-blue)] opacity-10 blur-3xl"></div>
       <div className="absolute bottom-[-10%] right-[-10%] h-96 w-96 rounded-full bg-[var(--secondary-blue)] opacity-10 blur-3xl"></div>
 
       <div className="w-full max-w-md relative z-10">
         <div className="rounded-3xl bg-white shadow-2xl p-8 sm:p-10 border border-gray-100">
-          
+
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-50 text-[var(--primary-blue)] mb-4">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
@@ -122,7 +123,7 @@ export default function AuthPage() {
           )}
 
           <div className="space-y-6">
-            
+
             {/* ปุ่ม Google Auth (UI ดูน่ากดขึ้น) */}
             <button
               onClick={signInWithGoogle}
@@ -148,17 +149,15 @@ export default function AuthPage() {
             <div className="flex justify-center rounded-xl bg-gray-100 p-1">
               <button
                 onClick={() => { setAuthMode("signin"); setErrorMsg(null); }}
-                className={`w-full px-4 py-2.5 text-sm font-bold rounded-lg transition-all ${
-                  authMode === "signin" ? "bg-white text-[var(--secondary-blue)] shadow-sm" : "text-gray-500 hover:text-gray-700"
-                }`}
+                className={`w-full px-4 py-2.5 text-sm font-bold rounded-lg transition-all ${authMode === "signin" ? "bg-white text-[var(--secondary-blue)] shadow-sm" : "text-gray-500 hover:text-gray-700"
+                  }`}
               >
                 เข้าสู่ระบบ
               </button>
               <button
                 onClick={() => { setAuthMode("signup"); setErrorMsg(null); }}
-                className={`w-full px-4 py-2.5 text-sm font-bold rounded-lg transition-all ${
-                  authMode === "signup" ? "bg-white text-[var(--secondary-blue)] shadow-sm" : "text-gray-500 hover:text-gray-700"
-                }`}
+                className={`w-full px-4 py-2.5 text-sm font-bold rounded-lg transition-all ${authMode === "signup" ? "bg-white text-[var(--secondary-blue)] shadow-sm" : "text-gray-500 hover:text-gray-700"
+                  }`}
               >
                 สมัครสมาชิก
               </button>
@@ -184,7 +183,7 @@ export default function AuthPage() {
                   className="w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-gray-800 focus:bg-white focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all"
                 />
               </div>
-              
+
               <button
                 onClick={authMode === "signin" ? signInWithEmail : signUpWithEmail}
                 disabled={saving || !emailForm.email || !emailForm.password}
@@ -201,7 +200,7 @@ export default function AuthPage() {
 
           </div>
         </div>
-        
+
         {/* Footer ของหน้า Login */}
         <p className="text-center text-sm text-gray-400 mt-8">
           มีปัญหาการเข้าสู่ระบบ? <a href="#" className="text-[var(--primary-blue)] hover:underline">ติดต่อผู้ดูแลระบบ</a>

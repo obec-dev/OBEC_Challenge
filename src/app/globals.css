@@ -35,3 +35,54 @@ body {
 .text-secondary {
   color: var(--secondary-blue);
 }
+
+/* เพิ่มแอนิเมชันสไตล์ Wix Startup */
+@layer utilities {
+  .animate-fade-in-up {
+    animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .animate-float {
+    animation: floating 3s ease-in-out infinite;
+  }
+  
+  /* เอฟเฟกต์ Glassmorphism แบบกระจกขุ่น (ใช้กับ Navbar/Card) */
+  .glass-effect {
+    @apply bg-white/80 backdrop-blur-md border border-white/40 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)];
+  }
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes floating {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+  100% { transform: translateY(0px); }
+}
+
+@layer utilities {
+  /* คลาสเรียกใช้งานแอนิเมชัน */
+  .animate-slide-up-reveal {
+    animation: slideUpReveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+}
+
+/* สร้างการเคลื่อนไหว (ผุดขึ้นมาจากข้างล่าง 120%) */
+@keyframes slideUpReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(120%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

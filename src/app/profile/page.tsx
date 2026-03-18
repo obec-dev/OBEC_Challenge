@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+// 🟢 1. เปลี่ยน Import มาใช้ตัว Client ที่เราเพิ่งสร้าง
+import { createClient } from "@/lib/supabase/client";
 import type { User } from '@supabase/supabase-js';
 import Link from "next/link";
 
@@ -25,13 +26,16 @@ type School = {
 };
 
 export default function ProfilePage() {
+  // 🟢 2. ประกาศเรียกใช้ Supabase ไว้ด้านบนสุดของ Component
+  const supabase = createClient();
+
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [schools, setSchools] = useState<School[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
+
   const [form, setForm] = useState({
     full_name: "",
     sub_role: "",
@@ -55,7 +59,7 @@ export default function ProfilePage() {
         .from("schools")
         .select("id, school_code, school_name, district_name, province")
         .order("school_name");
-      
+
       const loadedSchools = schoolsData ?? [];
       setSchools(loadedSchools);
 
@@ -88,9 +92,9 @@ export default function ProfilePage() {
 
   const filteredSchools = useMemo(() => {
     if (!searchQuery) return schools.slice(0, 50);
-    
+
     return schools
-      .filter((s) => 
+      .filter((s) =>
         s.school_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.district_name.toLowerCase().includes(searchQuery.toLowerCase())
       )
@@ -145,7 +149,7 @@ export default function ProfilePage() {
     <main className="min-h-screen bg-[var(--background)] py-12 px-4 flex justify-center items-start relative">
       {/* 🛠️ แก้ที่ 1: เอา z-10 ออกจากกล่องหลัก เพื่อปลดล็อกเลเยอร์ทั้งหมด */}
       <div className="w-full max-w-2xl relative">
-        
+
         <div className="text-center mb-8">
           <h1 className="text-3xl font-extrabold text-[var(--secondary-blue)]">
             จัดการโปรไฟล์ส่วนตัว
@@ -154,7 +158,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100">
-          
+
           <div className={`rounded-t-2xl p-4 border-b ${profile?.training_flag ? 'bg-green-50 border-green-100' : 'bg-orange-50 border-orange-100'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -164,15 +168,15 @@ export default function ProfilePage() {
                     {profile?.training_flag ? 'ผ่านการอบรมกติกาแล้ว' : 'คุณยังไม่ได้ผ่านการอบรม'}
                   </h3>
                   <p className={`text-sm ${profile?.training_flag ? 'text-green-600' : 'text-orange-600'}`}>
-                    {profile?.training_flag 
-                      ? 'คุณสามารถสร้างทีมและส่งผลงานได้ทันที' 
+                    {profile?.training_flag
+                      ? 'คุณสามารถสร้างทีมและส่งผลงานได้ทันที'
                       : 'กรุณาดูวิดีโอกติกาให้จบเพื่อรับสิทธิ์ส่งผลงาน'}
                   </p>
                 </div>
               </div>
               {!profile?.training_flag && (
-                <Link 
-                  href="/training" 
+                <Link
+                  href="/training"
                   className="shrink-0 bg-[var(--accent-orange)] hover:bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors"
                 >
                   ไปหน้าอบรม ➔
@@ -182,7 +186,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="p-8 space-y-6">
-            
+
             <div>
               <label className="block text-sm font-bold text-[var(--secondary-blue)] mb-2">
                 👤 ชื่อ-นามสกุลจริง
@@ -218,11 +222,11 @@ export default function ProfilePage() {
               <label className="block text-sm font-bold text-[var(--secondary-blue)] mb-2">
                 🏫 สังกัดโรงเรียน
               </label>
-              
+
               {/* 🛠️ แก้ที่ 2: ย้ายแผ่นกระจกใส (Backdrop) มาไว้ตรงนี้ เพื่อให้มันอยู่ "ใต้" input แต่ทับส่วนอื่น */}
               {isDropdownOpen && (
-                <div 
-                  className="fixed inset-0 z-30 cursor-default" 
+                <div
+                  className="fixed inset-0 z-30 cursor-default"
                   onClick={() => setIsDropdownOpen(false)}
                 ></div>
               )}
@@ -241,7 +245,7 @@ export default function ProfilePage() {
                   onFocus={() => setIsDropdownOpen(true)}
                   className={`w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-gray-800 focus:bg-white focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all ${isDropdownOpen ? 'rounded-b-none border-b-0' : ''}`}
                 />
-                
+
                 <div className="absolute right-4 top-3.5 text-gray-400 pointer-events-none">
                   {isDropdownOpen ? '▲' : '▼'}
                 </div>
@@ -285,7 +289,7 @@ export default function ProfilePage() {
                 {saving ? "กำลังบันทึกข้อมูล..." : "💾 บันทึกโปรไฟล์"}
               </button>
             </div>
-            
+
           </div>
         </div>
 

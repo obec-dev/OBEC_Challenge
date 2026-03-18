@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { supabase } from "@/lib/supabaseClient";
+// 🟢 1. เปลี่ยน Import มาใช้ตัว Client ที่เราเพิ่งสร้าง
+import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../contexts/AuthContext";
 import Link from "next/link";
@@ -16,14 +17,17 @@ type ProjectTeam = {
 };
 
 export default function ReviewPage() {
+  // 🟢 2. ประกาศเรียกใช้ Supabase ไว้ด้านบนสุดของ Component
+  const supabase = createClient();
+
   const router = useRouter();
   const { user, profile, currentRole, loading: authLoading } = useAuth();
-  
+
   const [teams, setTeams] = useState<ProjectTeam[]>([]);
   const [schoolName, setSchoolName] = useState("");
-  
+
   // 🟢 แยก State สำหรับ Loading กล่องข้อความ กับ Loading ของปุ่ม
-  const [pageLoading, setPageLoading] = useState(true); 
+  const [pageLoading, setPageLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const hasInit = useRef(false); // ตัวล็อคกัน useEffect รันซ้ำซ้อน
@@ -55,7 +59,7 @@ export default function ReviewPage() {
         .select("school_name, district_name")
         .eq("id", profile.school_id)
         .single();
-      
+
       let currentSchoolName = "";
       if (schoolData) {
         currentSchoolName = `${schoolData.school_name} (${schoolData.district_name})`;
@@ -84,14 +88,14 @@ export default function ReviewPage() {
       // 🟢 เคลียร์ทุกอย่างให้หยุดหมุน ไม่ว่าจะสำเร็จหรือพัง
       clearTimeout(fallbackTimer);
       setIsRefreshing(false);
-      setPageLoading(false); 
+      setPageLoading(false);
     }
   };
 
   // 3. ควบคุมการโหลดตอนเปิดหน้าเว็บครั้งแรก
   useEffect(() => {
     if (authLoading || !profile) return;
-    
+
     // กันไม่ให้มันทำงานซ้ำตอน React เรนเดอร์
     if (hasInit.current) return;
     hasInit.current = true;
@@ -107,13 +111,13 @@ export default function ReviewPage() {
       setPageLoading(false); // สั่งปิด Loading กลางกล่องทันที
 
       // 🕵️ แอบดึงข้อมูลเงียบๆ เผื่อพี่ไปแก้ผลงานมา แล้วลืมกด Refresh
-      fetchTeamsData(false); 
+      fetchTeamsData(false);
     } else {
       // ⏳ กรณีไม่มี Cache (เข้าครั้งแรก): ให้กล่องขึ้นตัวหมุนไปก่อน
       setPageLoading(true);
       fetchTeamsData(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, authLoading]);
 
   // 🔴 Loading เฉพาะระบบ Auth เท่านั้น (หน้าจอขาวหมุนติ้วๆ จะเกิดแค่ช่วงนี้)
@@ -132,24 +136,24 @@ export default function ReviewPage() {
   return (
     <main className="min-h-screen bg-[var(--background)] py-12 px-4 flex justify-center items-start relative pb-24">
       <div className="w-full max-w-4xl relative z-10">
-        
+
         {/* ส่วนหัวและปุ่มกด (รอดพ้นจากการโดน Loading บังแล้ว!) */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-extrabold text-[var(--secondary-blue)]">แดชบอร์ดผลงาน</h1>
             <p className="text-gray-500 mt-2">จัดการและตรวจสอบผลงานทั้งหมดของโรงเรียนคุณ</p>
           </div>
-          
+
           <div className="flex gap-3 w-full md:w-auto">
-            <button 
+            <button
               onClick={() => fetchTeamsData(true)}
               disabled={isRefreshing}
               className="flex-1 md:flex-none bg-white border-2 border-[var(--primary-blue)] text-[var(--primary-blue)] px-6 py-3 rounded-full font-bold hover:bg-blue-50 transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isRefreshing ? "⏳ อัปเดตข้อมูล..." : "🔄 รีเฟรชข้อมูล"}
             </button>
-            <Link 
-              href="/submission" 
+            <Link
+              href="/submission"
               className="flex-1 md:flex-none bg-[var(--accent-red)] text-white px-6 py-3 rounded-full font-bold hover:bg-red-700 transition-all shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-2"
             >
               <span className="text-xl">+</span> สร้างผลงานใหม่
@@ -199,7 +203,7 @@ export default function ReviewPage() {
                       <h4 className="font-bold text-xl text-gray-800 mb-3 line-clamp-2">
                         {t.team_name || <span className="text-gray-400 italic">(ยังไม่ได้ระบุชื่อโครงงาน)</span>}
                       </h4>
-                      
+
                       <div className="flex flex-wrap gap-4 text-sm">
                         {t.pdf_url ? (
                           <a href={t.pdf_url} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-blue-600 font-medium hover:underline bg-blue-50 px-3 py-1.5 rounded-lg">
@@ -208,7 +212,7 @@ export default function ReviewPage() {
                         ) : (
                           <span className="flex items-center gap-1.5 text-gray-400 bg-gray-50 px-3 py-1.5 rounded-lg">📄 ขาดไฟล์ PDF</span>
                         )}
-                        
+
                         {t.video_url ? (
                           <a href={t.video_url} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-red-600 font-medium hover:underline bg-red-50 px-3 py-1.5 rounded-lg">
                             🎬 ดูวิดีโอ
@@ -220,8 +224,8 @@ export default function ReviewPage() {
                     </div>
 
                     <div className="flex items-center justify-end md:border-l md:border-gray-100 md:pl-6">
-                      <Link 
-                        href={`/submission?id=${t.id}`} 
+                      <Link
+                        href={`/submission?id=${t.id}`}
                         className="w-full md:w-auto text-center px-6 py-3 bg-[var(--primary-blue)] hover:bg-[var(--secondary-blue)] text-white rounded-xl text-sm font-bold shadow-sm transition-colors"
                       >
                         ✏️ เปิด/แก้ไข

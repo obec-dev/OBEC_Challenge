@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from "@/lib/supabase/client";
 
 type School = {
   id: string;
@@ -18,6 +18,7 @@ type Profile = {
 };
 
 export default function SchoolProfileCreator({ onComplete }: { onComplete: () => void }) {
+  const supabase = createClient();
   const [schools, setSchools] = useState<School[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [selectedSchoolId, setSelectedSchoolId] = useState<string>("");

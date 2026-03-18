@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, Suspense, useRef } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -15,18 +15,20 @@ type ProjectTeam = {
 };
 
 function SubmissionForm() {
+  const supabase = createClient();
+
   const router = useRouter();
   const searchParams = useSearchParams();
-  const editId = searchParams.get("id"); 
+  const editId = searchParams.get("id");
   const isEditMode = !!editId;
 
   const { user, profile, currentRole, loading: authLoading } = useAuth();
-  
+
   const [team, setTeam] = useState<ProjectTeam | null>(null);
   const [schoolName, setSchoolName] = useState("");
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  
+
   // 🟢 แยก State Loading ควบคุมเฉพาะส่วน Form
   const [pageLoading, setPageLoading] = useState(true);
   const hasInit = useRef(false); // 🔐 แม่กุญแจกันสลับ Tab
@@ -36,7 +38,7 @@ function SubmissionForm() {
   const [videoError, setVideoError] = useState<string>("");
 
   const [toast, setToast] = useState<{ show: boolean; msg: string; type: 'success' | 'error' }>({ show: false, msg: '', type: 'success' });
-  const [confirmModal, setConfirmModal] = useState<{ show: boolean; action: () => void }>({ show: false, action: () => {} });
+  const [confirmModal, setConfirmModal] = useState<{ show: boolean; action: () => void }>({ show: false, action: () => { } });
 
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ show: true, msg, type });
@@ -51,7 +53,7 @@ function SubmissionForm() {
     }
     const isDriveFile = url.includes("drive.google.com/file/d/") || url.includes("drive.google.com/open?id=");
     const isYouTube = url.includes("youtube.com/watch") || url.includes("youtu.be/");
-    
+
     if (!isDriveFile && !isYouTube) {
       setVideoError("⚠️ กรุณาใส่ลิงก์ Google Drive หรือ YouTube ที่ถูกต้อง");
       return false;
@@ -62,8 +64,8 @@ function SubmissionForm() {
 
   const canSubmit = useMemo(() => {
     return (
-      draft.team_name.trim().length > 0 && 
-      (pdfFile !== null || team?.pdf_url) && 
+      draft.team_name.trim().length > 0 &&
+      (pdfFile !== null || team?.pdf_url) &&
       draft.video_url.trim().length > 0 &&
       videoError === ""
     );
@@ -77,7 +79,7 @@ function SubmissionForm() {
   // 🛠️ โหลดข้อมูลครั้งแรกและล็อคกุญแจทันที
   useEffect(() => {
     if (authLoading || !profile) return;
-    
+
     // กัน Re-render และการสลับ Tab
     if (hasInit.current) return;
     hasInit.current = true;
@@ -157,7 +159,7 @@ function SubmissionForm() {
     setConfirmModal({
       show: true,
       action: async () => {
-        setConfirmModal({ show: false, action: () => {} });
+        setConfirmModal({ show: false, action: () => { } });
         await processSubmit();
       }
     });
@@ -167,11 +169,11 @@ function SubmissionForm() {
     let finalPdfUrl = team?.pdf_url;
     if (pdfFile) {
       showToast(`เตรียมอัปโหลดไฟล์ PDF...`, "success");
-      finalPdfUrl = "https://mock-r2-url.com/" + pdfFile.name; 
+      finalPdfUrl = "https://mock-r2-url.com/" + pdfFile.name;
     }
 
     setSaving(true);
-    const payload = { 
+    const payload = {
       status: "submitted",
       pdf_url: finalPdfUrl,
       team_name: draft.team_name,
@@ -227,7 +229,7 @@ function SubmissionForm() {
             </h3>
             <p className="text-gray-500 mb-8">ข้อมูลนี้จะถูกอัปเดตเข้าระบบการประกวด</p>
             <div className="flex gap-4">
-              <button onClick={() => setConfirmModal({ show: false, action: () => {} })} className="flex-1 px-4 py-3 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">ยกเลิก</button>
+              <button onClick={() => setConfirmModal({ show: false, action: () => { } })} className="flex-1 px-4 py-3 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">ยกเลิก</button>
               <button onClick={confirmModal.action} className="flex-1 px-4 py-3 rounded-xl font-bold text-white bg-[var(--primary-blue)] hover:bg-[var(--secondary-blue)] shadow-md transition-colors">ยืนยัน</button>
             </div>
           </div>
@@ -310,7 +312,7 @@ function SubmissionForm() {
                 <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 text-center">
                   <h3 className="font-bold text-slate-800 mb-2">จัดการผลงาน</h3>
                   <p className="text-sm text-slate-600 mb-6">กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนกดยืนยัน</p>
-                  
+
                   <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                     {isEditMode ? (
                       <>

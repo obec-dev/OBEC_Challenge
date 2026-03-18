@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -11,6 +11,8 @@ type School = {
 };
 
 export function UserProfile() {
+  const supabase = createClient();
+
   const { user, profile, currentRole, userRoles, setCurrentRole } = useAuth();
   const [school, setSchool] = useState<School | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -135,9 +137,8 @@ export function UserProfile() {
                     setCurrentRole(role.type);
                     setDropdownOpen(false);
                   }}
-                  className={`w-full text-left px-4 py-2 text-sm hover:bg-blue-50 flex items-center space-x-2 ${
-                    currentRole === role.type ? 'bg-blue-50 border-l-2 border-blue-600' : ''
-                  }`}
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-blue-50 flex items-center space-x-2 ${currentRole === role.type ? 'bg-blue-50 border-l-2 border-blue-600' : ''
+                    }`}
                 >
                   <span>{role.icon}</span>
                   <span>{role.title}</span>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from "@/lib/supabase/client";
 
 type Team = {
   id: string;
@@ -12,6 +12,7 @@ type Team = {
 };
 
 export default function ShowcasePage() {
+  const supabase = createClient();
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -32,7 +33,7 @@ export default function ShowcasePage() {
   return (
     <main className="min-h-screen bg-[var(--background)] py-12 px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        
+
         {/* Header Section */}
         <div className="text-center mb-12">
           <div className="inline-block bg-blue-100 text-secondary-blue px-4 py-1 rounded-full text-sm font-bold tracking-wide mb-4">
@@ -69,7 +70,7 @@ export default function ShowcasePage() {
                 className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-md transition-all hover:-translate-y-2 hover:shadow-xl border border-gray-100"
               >
                 {/* ส่วนหัวของการ์ด (Cover Image แบบ Gradient) */}
-                <div 
+                <div
                   className="h-32 w-full relative flex items-center justify-center"
                   style={{
                     background: `linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%)`
@@ -88,7 +89,7 @@ export default function ShowcasePage() {
                   <h2 className="text-xl font-bold text-[var(--secondary-blue)] line-clamp-2">
                     {team.team_name ?? "ผลงานไม่ได้ตั้งชื่อ"}
                   </h2>
-                  
+
                   <div className="mt-2 flex items-center gap-2">
                     <span className="flex h-2.5 w-2.5 rounded-full bg-[var(--accent-green)]"></span>
                     <span className="text-sm font-medium text-gray-500">
