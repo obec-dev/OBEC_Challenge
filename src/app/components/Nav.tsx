@@ -17,7 +17,7 @@ export function Nav() {
 
             <Link href="/" className="flex items-center group">
               <Image
-                src="/OBEC_Challenge_small.png"
+                src="/OBEC_Challenge_TP.png"
                 alt="OBEC Challenge Logo"
                 width={160}
                 height={40}
