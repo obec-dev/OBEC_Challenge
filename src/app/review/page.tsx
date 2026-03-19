@@ -21,7 +21,7 @@ export default function ReviewPage() {
   const supabase = createClient();
 
   const router = useRouter();
-  const { user, profile, currentRole, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
 
   const [teams, setTeams] = useState<ProjectTeam[]>([]);
   const [schoolName, setSchoolName] = useState("");
@@ -35,10 +35,10 @@ export default function ReviewPage() {
   // 1. ตรวจสอบสิทธิ์
   useEffect(() => {
     if (authLoading) return;
-    if (!user || currentRole !== "school_admin") {
+    if (!user) {
       router.push("/");
     }
-  }, [user, currentRole, authLoading, router]);
+  }, [user, authLoading, router]);
 
   // 🛠️ ฟังก์ชันดึงข้อมูลหลัก (มี Safety Timeout ทะลวงบั๊กค้าง)
   const fetchTeamsData = async (isManualRefresh = false) => {
@@ -130,7 +130,7 @@ export default function ReviewPage() {
     );
   }
 
-  if (currentRole !== "school_admin") return null;
+  
 
   // 🟢 เริ่มเรนเดอร์โครงสร้าง UI ทันที (ปุ่มต่างๆ จะโชว์ตลอดเวลา ไม่หายไปไหนแล้ว)
   return (

@@ -22,7 +22,7 @@ function SubmissionForm() {
   const editId = searchParams.get("id");
   const isEditMode = !!editId;
 
-  const { user, profile, currentRole, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
 
   const [team, setTeam] = useState<ProjectTeam | null>(null);
   const [schoolName, setSchoolName] = useState("");
@@ -73,8 +73,8 @@ function SubmissionForm() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user || currentRole !== "school_admin") router.push("/");
-  }, [user, currentRole, authLoading, router]);
+    if (!user) router.push("/");
+  }, [user, authLoading, router]);
 
   // 🛠️ โหลดข้อมูลครั้งแรกและล็อคกุญแจทันที
   useEffect(() => {
@@ -208,7 +208,7 @@ function SubmissionForm() {
     );
   }
 
-  if (currentRole !== "school_admin") return null;
+  
 
   return (
     <div className="relative overflow-hidden pb-24">

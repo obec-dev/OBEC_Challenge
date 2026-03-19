@@ -13,7 +13,7 @@ type School = {
 export function UserProfile() {
   const supabase = createClient();
 
-  const { user, profile, currentRole, userRoles, setCurrentRole } = useAuth();
+  const { user, profile } = useAuth();
   const [school, setSchool] = useState<School | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -36,19 +36,6 @@ export function UserProfile() {
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   };
 
-  const getRoleDisplay = () => {
-    if (!currentRole) return "เลือกบทบาท";
-
-    switch (currentRole) {
-      case 'personal':
-        return 'ส่วนตัว';
-      case 'school_admin':
-        return 'ผู้ดูแลโรงเรียน';
-      default:
-        return currentRole;
-    }
-  };
-
   const getSubRoleDisplay = () => {
     if (!profile?.sub_role) return "";
 
@@ -62,25 +49,14 @@ export function UserProfile() {
     return roleMap[profile.sub_role] || profile.sub_role;
   };
 
-  const availableRoles = [];
-  if (userRoles) {
-    availableRoles.push({ type: 'personal', title: 'ส่วนตัว', icon: '👤' });
-    if (userRoles.has_school_admin) {
-      availableRoles.push({ type: 'school_admin', title: 'ผู้ดูแลโรงเรียน', icon: '🏫' });
-    }
-  }
-
-  // 🟢 อัปเกรดฟังก์ชันออกจากระบบ (Force Clear & Redirect)
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
     } catch (error) {
       console.error('Error signing out (ignoring):', error);
     } finally {
-      // ล้างไส้ติ่งทุกอย่างที่ค้างในเบราว์เซอร์
       localStorage.clear();
       sessionStorage.clear();
-      // บังคับรีเฟรชกลับหน้าแรก เพื่อให้ React โหลด State ใหม่ทั้งหมดแบบ Guest
       window.location.href = "/";
     }
   };
@@ -105,9 +81,6 @@ export function UserProfile() {
         <span className="text-blue-700 font-medium hidden md:block">
           {profile?.full_name ?? user.email}
         </span>
-        <span className="text-blue-500 text-sm hidden lg:block">
-          ({getRoleDisplay()})
-        </span>
       </button>
 
       {dropdownOpen && (
@@ -120,32 +93,7 @@ export function UserProfile() {
                 {school.school_name} ({school.district_name})
               </p>
             )}
-            <p className="text-xs text-blue-400 mt-1">
-              บทบาทปัจจุบัน: {getRoleDisplay()}
-            </p>
           </div>
-
-          {availableRoles.length > 1 && (
-            <div className="py-2 border-b border-blue-100">
-              <p className="px-4 py-1 text-xs font-medium text-blue-700 uppercase tracking-wide">
-                สลับบทบาท
-              </p>
-              {availableRoles.map((role) => (
-                <button
-                  key={role.type}
-                  onClick={() => {
-                    setCurrentRole(role.type);
-                    setDropdownOpen(false);
-                  }}
-                  className={`w-full text-left px-4 py-2 text-sm hover:bg-blue-50 flex items-center space-x-2 ${currentRole === role.type ? 'bg-blue-50 border-l-2 border-blue-600' : ''
-                    }`}
-                >
-                  <span>{role.icon}</span>
-                  <span>{role.title}</span>
-                </button>
-              ))}
-            </div>
-          )}
 
           <div className="py-1">
             <Link

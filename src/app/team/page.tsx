@@ -17,7 +17,7 @@ export default function TeamBuilderPage() {
   const supabase = createClient();
 
   const router = useRouter();
-  const { user, profile, currentRole, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
 
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [schoolName, setSchoolName] = useState<string>("");
@@ -29,10 +29,10 @@ export default function TeamBuilderPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user || currentRole !== "school_admin") {
+    if (!user) {
       router.push("/");
     }
-  }, [user, currentRole, authLoading, router]);
+  }, [user, authLoading, router]);
 
   /// 🛠️ ฟังก์ชันดึงข้อมูล (แบบมีระบบ Cache และ Timeout)
   const fetchTeamData = async (isManualRefresh = false) => {
@@ -126,7 +126,7 @@ export default function TeamBuilderPage() {
     );
   }
 
-  if (currentRole !== "school_admin") return null;
+  
 
   return (
     <main className="min-h-screen bg-[var(--background)] py-12 px-4 flex justify-center items-start relative pb-24">
