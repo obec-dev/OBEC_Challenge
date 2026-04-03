@@ -85,7 +85,7 @@ export default function AuthPage() {
 
   if (loading || user) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center bg-[var(--background)]">
+      <main className="flex min-h-screen flex-col items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--primary-blue)] mb-4"></div>
         <p className="text-[var(--secondary-blue)] font-medium">
           {user ? "กำลังพาท่านเข้าสู่ระบบ..." : "กำลังโหลด..."}
@@ -95,11 +95,9 @@ export default function AuthPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[var(--background)] p-4 relative overflow-hidden">
+    <main className="flex min-h-screen items-center justify-center p-4 relative overflow-hidden">
 
-      {/* วงกลมตกแต่งฉากหลัง (เข้าธีมเดียวกับหน้า Home) */}
-      <div className="absolute top-[-10%] left-[-10%] h-96 w-96 rounded-full bg-[var(--primary-blue)] opacity-10 blur-3xl"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] h-96 w-96 rounded-full bg-[var(--secondary-blue)] opacity-10 blur-3xl"></div>
+      {/* วงกลมตกแต่งฉากหลัง (ย้ายไปรวมที่ layout.tsx แล้ว) */}
 
       <div className="w-full max-w-md relative z-10">
         <div className="rounded-3xl bg-white shadow-2xl p-8 sm:p-10 border border-gray-100">

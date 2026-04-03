@@ -7,7 +7,7 @@ export default function Home() {
   const { user, loading } = useAuth();
 
   return (
-    <main className="min-h-screen bg-[var(--background)] overflow-hidden">
+    <main className="min-h-screen overflow-hidden">
 
       {/* 1. Hero Section */}
       <section className="relative bg-[var(--primary-blue)] pt-24 pb-40 px-4">

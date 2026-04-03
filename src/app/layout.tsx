@@ -27,9 +27,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-blue-50 text-blue-900`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
+          {/* Global Animated Background */}
+          <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden bg-[var(--background)]">
+             <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[var(--primary-blue)] opacity-5 blur-3xl animate-float"></div>
+             <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-[var(--secondary-blue)] opacity-5 blur-3xl animate-float" style={{ animationDelay: '1.5s' }}></div>
+          </div>
           <Nav />
           <main className="min-h-[calc(100vh-56px)]">{children}</main>
         </AuthProvider>

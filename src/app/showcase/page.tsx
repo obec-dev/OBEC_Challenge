@@ -31,7 +31,7 @@ export default function ShowcasePage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-[var(--background)] py-12 px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
 
         {/* Header Section */}

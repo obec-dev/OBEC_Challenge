@@ -119,7 +119,7 @@ export default function TeamBuilderPage() {
   // 🔴 หน้าจอหมุนโหลดเฉพาะตอนเช็คสิทธิ์ (Auth)
   if (authLoading) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center bg-[var(--background)]">
+      <main className="flex min-h-screen flex-col items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--primary-blue)] mb-4"></div>
         <p className="text-[var(--secondary-blue)] font-medium">กำลังตรวจสอบข้อมูล...</p>
       </main>
@@ -129,7 +129,7 @@ export default function TeamBuilderPage() {
   
 
   return (
-    <main className="min-h-screen bg-[var(--background)] py-12 px-4 flex justify-center items-start relative pb-24">
+    <main className="min-h-screen py-12 px-4 flex justify-center items-start relative pb-24">
       <div className="w-full max-w-4xl relative z-10">
 
         {/* หัวข้อและปุ่มรีเฟรช (แสดงตลอด ไม่หาย) */}

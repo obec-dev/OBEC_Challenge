@@ -123,7 +123,7 @@ export default function ReviewPage() {
   // 🔴 Loading เฉพาะระบบ Auth เท่านั้น (หน้าจอขาวหมุนติ้วๆ จะเกิดแค่ช่วงนี้)
   if (authLoading) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center bg-[var(--background)]">
+      <main className="flex min-h-screen flex-col items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--primary-blue)] mb-4"></div>
         <p className="text-[var(--secondary-blue)] font-medium">กำลังตรวจสอบสิทธิ์...</p>
       </main>
@@ -134,7 +134,7 @@ export default function ReviewPage() {
 
   // 🟢 เริ่มเรนเดอร์โครงสร้าง UI ทันที (ปุ่มต่างๆ จะโชว์ตลอดเวลา ไม่หายไปไหนแล้ว)
   return (
-    <main className="min-h-screen bg-[var(--background)] py-12 px-4 flex justify-center items-start relative pb-24">
+    <main className="min-h-screen py-12 px-4 flex justify-center items-start relative pb-24">
       <div className="w-full max-w-4xl relative z-10">
 
         {/* ส่วนหัวและปุ่มกด (รอดพ้นจากการโดน Loading บังแล้ว!) */}

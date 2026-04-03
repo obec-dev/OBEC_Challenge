@@ -138,7 +138,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center bg-[var(--background)]">
+      <main className="flex min-h-screen flex-col items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--primary-blue)] mb-4"></div>
         <p className="text-[var(--secondary-blue)] font-medium">กำลังเตรียมข้อมูลโรงเรียนทั่วประเทศ...</p>
       </main>
@@ -146,7 +146,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--background)] py-12 px-4 flex justify-center items-start relative">
+    <main className="min-h-screen py-12 px-4 flex justify-center items-start relative">
       {/* 🛠️ แก้ที่ 1: เอา z-10 ออกจากกล่องหลัก เพื่อปลดล็อกเลเยอร์ทั้งหมด */}
       <div className="w-full max-w-2xl relative">
 

@@ -346,7 +346,7 @@ function SubmissionForm() {
 
 export default function SubmissionPage() {
   return (
-    <main className="min-h-screen bg-[var(--background)] py-12 px-4 flex justify-center items-start">
+    <main className="min-h-screen py-12 px-4 flex justify-center items-start">
       <Suspense fallback={
         <div className="flex flex-col items-center justify-center pt-20">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--primary-blue)] mb-4"></div>

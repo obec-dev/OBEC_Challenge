@@ -148,10 +148,7 @@ export default function TrainingPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[var(--background)] py-12 px-4 relative overflow-hidden">
-      
-      <div className="absolute top-10 left-10 w-64 h-64 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float" style={{ animationDelay: "0s" }}></div>
-      <div className="absolute bottom-10 right-10 w-72 h-72 bg-red-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float" style={{ animationDelay: "2s" }}></div>
+    <main className="min-h-screen py-12 px-4 relative overflow-hidden">
 
       <div className="mx-auto max-w-4xl relative z-10 animate-fade-in-up">
         
