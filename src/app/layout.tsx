@@ -1,22 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Nav } from "./components/Nav";
 import { AuthProvider } from "./contexts/AuthContext";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
   title: "OBEC Challenge",
   description: "Competition submission platform",
+  icons: {
+    icon: `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏫</text></svg>`,
+  },
 };
 
 export default function RootLayout({
@@ -26,14 +18,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+        <link
+          rel='stylesheet'
+          href='https://cdn-uicons.flaticon.com/2.1.0/uicons-solid-rounded/css/uicons-solid-rounded.css'
+        />
+      </head>
+      <body className="antialiased font-[family-name:Prompt]">
         <AuthProvider>
           {/* Global Animated Background */}
           <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden bg-[var(--background)]">
-             <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[var(--primary-blue)] opacity-5 blur-3xl animate-float"></div>
-             <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-[var(--secondary-blue)] opacity-5 blur-3xl animate-float" style={{ animationDelay: '1.5s' }}></div>
+            <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[var(--primary-blue)] opacity-5 blur-3xl animate-float"></div>
+            <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-[var(--secondary-blue)] opacity-5 blur-3xl animate-float" style={{ animationDelay: '1.5s' }}></div>
           </div>
           <Nav />
           <main className="min-h-[calc(100vh-56px)]">{children}</main>

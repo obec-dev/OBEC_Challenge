@@ -130,7 +130,7 @@ export default function ReviewPage() {
     );
   }
 
-  
+
 
   // 🟢 เริ่มเรนเดอร์โครงสร้าง UI ทันที (ปุ่มต่างๆ จะโชว์ตลอดเวลา ไม่หายไปไหนแล้ว)
   return (
@@ -165,7 +165,9 @@ export default function ReviewPage() {
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
           <div className="bg-[var(--primary-blue)] p-6 text-white flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="text-4xl bg-white/20 p-3 rounded-xl backdrop-blur-sm">🏫</div>
+              <div className="flex items-center justify-center w-16 h-16">
+                <i className="fi fi-sr-school text-3xl text-blue"></i>
+              </div>
               <div>
                 <p className="text-sm font-medium text-blue-100 tracking-wide uppercase">ผลงานสังกัด</p>
                 <h2 className="text-2xl font-bold">{schoolName || "กำลังโหลดข้อมูล..."}</h2>

@@ -1,13 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
-  /* โทนสีใหม่สไตล์ CONNEXT ED */
   --background: #f4f7f9;
   --foreground: #333333;
-  --primary-blue: #112652;    /* กรมท่าเข้ม */
-  --secondary-blue: #1a3b7c;  /* น้ำเงินองค์กร */
-  --accent-red: #da291c;      /* แดงสดตัดความเลี่ยน */
+  --primary-blue: #112652;
+  --secondary-blue: #1a3b7c;
+  --accent-red: #da291c;
   --accent-orange: #f4a261;
   --accent-green: #2a9d8f;
   --light-blue: #e8f0fe;
@@ -16,10 +14,9 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Prompt', sans-serif; /* บังคับใช้ฟอนต์ Prompt */
+  font-family: 'Prompt', sans-serif;
 }
 
-/* --- คง Class เดิมของพี่ไว้ เผื่อมีการใช้งานใน Component อื่น --- */
 .bg-primary {
   background-color: var(--primary-blue);
 }
@@ -36,53 +33,58 @@ body {
   color: var(--secondary-blue);
 }
 
-/* เพิ่มแอนิเมชันสไตล์ Wix Startup */
 @layer utilities {
   .animate-fade-in-up {
     animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+
   .animate-float {
     animation: floating 3s ease-in-out infinite;
   }
-  
-  /* เอฟเฟกต์ Glassmorphism แบบกระจกขุ่น (ใช้กับ Navbar/Card) */
+
   .glass-effect {
-    @apply bg-white/80 backdrop-blur-md border border-white/40 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)];
+    background-color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  }
+  
+  .animate-slide-up-reveal {
+    animation: slideUpReveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 }
 
 @keyframes fadeInUp {
-  0% {
+  from {
     opacity: 0;
     transform: translateY(40px);
   }
-  100% {
+  to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
 @keyframes floating {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-12px); }
-  100% { transform: translateY(0px); }
-}
-
-@layer utilities {
-  /* คลาสเรียกใช้งานแอนิเมชัน */
-  .animate-slide-up-reveal {
-    animation: slideUpReveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+  100% {
+    transform: translateY(0px);
   }
 }
 
-/* สร้างการเคลื่อนไหว (ผุดขึ้นมาจากข้างล่าง 120%) */
 @keyframes slideUpReveal {
-  0% {
+  from {
     opacity: 0;
     transform: translateY(120%);
   }
-  100% {
+  to {
     opacity: 1;
     transform: translateY(0);
   }
-}
+}

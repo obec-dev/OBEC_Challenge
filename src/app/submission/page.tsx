@@ -208,7 +208,7 @@ function SubmissionForm() {
     );
   }
 
-  
+
 
   return (
     <div className="relative overflow-hidden pb-24">
@@ -247,7 +247,9 @@ function SubmissionForm() {
 
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden min-h-[500px]">
           <div className="bg-blue-50 border-b border-blue-100 p-6 flex items-start gap-4">
-            <div className="text-4xl">🏫</div>
+            <div className="flex items-center justify-center w-16 h-16">
+              <i className="fi fi-sr-school text-3xl text-blue"></i>
+            </div>
             <div className="flex-1">
               <p className="text-sm font-bold text-[var(--primary-blue)] uppercase tracking-wide">กำลังดำเนินการในนาม</p>
               <h2 className="text-xl font-bold text-[var(--secondary-blue)]">{schoolName || "กำลังโหลดข้อมูล..."}</h2>

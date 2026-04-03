@@ -201,7 +201,7 @@ export default function AuthPage() {
 
         {/* Footer ของหน้า Login */}
         <p className="text-center text-sm text-gray-400 mt-8">
-          มีปัญหาการเข้าสู่ระบบ? <a href="#" className="text-[var(--primary-blue)] hover:underline">ติดต่อผู้ดูแลระบบ</a>
+          มีปัญหาการเข้าสู่ระบบ? <a href="https://www.google.com" className="text-[var(--primary-blue)] hover:underline">ติดต่อผู้ดูแลระบบ</a>
         </p>
 
       </div>
